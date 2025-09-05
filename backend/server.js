@@ -9,11 +9,14 @@ dotenv.config();
 
 const app = express();
 
-// Allowed origins (update with your actual frontend domain)
+// ✅ Trust proxy (important for Render/Vercel/Heroku so rate-limit sees real IP)
+app.set('trust proxy', 1);
+
+// Allowed origins (update with your actual frontend domains)
 const allowedOrigins = [
   'http://localhost:5173',
   'https://your-domain.com',
-  'https://c-ashaurya2025latest-we1m.vercel.app' // ✅ Vercel frontend
+  'https://c-ashaurya2025latest-we1m.vercel.app'
 ];
 
 app.use(
@@ -31,39 +34,26 @@ app.use(
 
 app.use(express.json());
 
-// ✅ Root route (fixes "Cannot GET /")
-app.get('/', (req, res) => {
-  res.send('Backend is running 🚀');
-});
-
-// Connect to MongoDB
+// ✅ Connect to MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log('✅ MongoDB connected'))
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
-// Rate limiter (10 requests/minute per IP)
+// ✅ Rate limiter (10 requests/minute per IP)
 const limiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
   message: 'Too many requests, please try again later.',
+  standardHeaders: true, // return rate limit info in headers
+  legacyHeaders: false,  // disable old X-RateLimit headers
 });
 app.use(limiter);
 
-// Routes
+// ✅ Routes
 app.use('/api/register', require('./routes/register'));
 app.use('/api/faq', require('./routes/faq'));
 
-// Server
+// ✅ Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-
-
-// middleware/auth.js
-module.exports = (req, res, next) => {
-  const token = req.headers['x-api-key'];
-  if (token !== process.env.ADMIN_SECRET) {
-    return res.status(403).json({ message: 'Forbidden' });
-  }
-  next();
-};
