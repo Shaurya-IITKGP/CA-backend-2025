@@ -13,7 +13,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'https://your-domain.com',
-  'https://c-ashaurya2025latest-we1m.vercel.app' // add Vercel frontend
+  'https://c-ashaurya2025latest-we1m.vercel.app' // ✅ Vercel frontend
 ];
 
 app.use(
@@ -31,7 +31,12 @@ app.use(
 
 app.use(express.json());
 
-// Connect to MongoDB (no deprecated options)
+// ✅ Root route (fixes "Cannot GET /")
+app.get('/', (req, res) => {
+  res.send('Backend is running 🚀');
+});
+
+// Connect to MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log('✅ MongoDB connected'))
