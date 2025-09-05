@@ -1,0 +1,10 @@
+{
+  "overrides": [
+    {
+      "files": ["backend/**/*.js"],
+      "env": {
+        "node": true
+      }
+    }
+  ]
+}
