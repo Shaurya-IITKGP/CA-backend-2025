@@ -16,7 +16,7 @@ app.set('trust proxy', 1);
 const allowedOrigins = [
   'http://localhost:5173',
   'https://your-domain.com',
-  'https://c-ashaurya2025latest-we1m.vercel.app'
+  'https://c-ashaurya2025latest-we1m.vercel.app/'
 ];
 
 app.use(
