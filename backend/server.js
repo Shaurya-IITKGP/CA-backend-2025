@@ -46,6 +46,16 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+// --- DB test route (add here) ---
+app.get('/db-test', async (req, res) => {
+  try {
+    const [rows] = await require('./db').query('SELECT NOW() AS currentTime');
+    res.json({ success: true, dbTime: rows[0].currentTime });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ✅ Routes
 app.use('/api/register', require('./routes/register'));
 app.use('/api/faq', require('./routes/faq'));
