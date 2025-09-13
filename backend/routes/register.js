@@ -1,33 +1,31 @@
-// backend/routes/register.js
+//backend/routes/register.js
 
 /* eslint-env node */
 const express = require('express');
-const router = express.Router();
 const { body, validationResult } = require('express-validator');
-const Registration = require('../models/Registration');
+const { createRegistration, getAllRegistrations } = require('../models/registrationModel');
 const ExcelJS = require('exceljs');
-// const auth = require('../middleware/auth'); // Optional for PATCH/DELETE protection
 
-// GET all registrations
+const router = express.Router();
+
+// ✅ GET all registrations
 router.get('/', async (req, res) => {
   try {
-    const registrations = await Registration.find();
+    const registrations = await getAllRegistrations();
     res.json(registrations);
   } catch (err) {
-    if(err)
-      res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// GET /api/register/export → Export to Excel (protected via query secret)
+// ✅ Export registrations as Excel
 router.get('/export', async (req, res) => {
-  const token = req.query.secret;
-  if (token === process.env.EXPORT_SECRET) {
+  if (req.query.token !== process.env.EXPORT_SECRET) {
     return res.status(403).json({ message: 'Access denied' });
   }
 
   try {
-    const data = await Registration.find();
+    const data = await getAllRegistrations();
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Registrations');
 
@@ -44,11 +42,10 @@ router.get('/export', async (req, res) => {
       { header: 'Experience', key: 'hasExperience' },
       { header: 'Past Exp.', key: 'pastExperience' },
       { header: 'Motivation', key: 'motivation' },
+      { header: 'Created At', key: 'created_at' }
     ];
 
-    data.forEach(entry => {
-      sheet.addRow(entry.toObject());
-    });
+    data.forEach(entry => sheet.addRow(entry));
 
     res.setHeader(
       'Content-Type',
@@ -59,17 +56,11 @@ router.get('/export', async (req, res) => {
     await workbook.xlsx.write(res);
     res.end();
   } catch (err) {
-    if(err)
-      res.status(500).send('Failed to export data');
+    res.status(500).send('Failed to export data');
   }
 });
 
-// GET one registration by ID
-router.get('/:id', getRegistration, (req, res) => {
-  res.json(res.registration);
-});
-
-// POST with validation and sanitization
+// ✅ POST with validation
 router.post(
   '/',
   [
@@ -96,59 +87,12 @@ router.post(
     }
 
     try {
-      const registration = new Registration(req.body);
-      const saved = await registration.save();
+      const saved = await createRegistration(req.body);
       res.status(201).json(saved);
     } catch (err) {
-      if(err)
-        res.status(500).json({ message: 'Failed to save registration' });
+      res.status(500).json({ message: 'Failed to save registration' });
     }
   }
 );
-
-// PATCH update registration by ID (optionally protected with auth)
-router.patch('/:id', /* auth, */ getRegistration, async (req, res) => {
-  Object.keys(req.body).forEach(key => {
-    if (req.body[key] != null) {
-      res.registration[key] = req.body[key];
-    }
-  });
-
-  try {
-    const updated = await res.registration.save();
-    res.json(updated);
-  } catch (err) {
-    if(err)
-      res.status(400).json({ message: 'Update failed' });
-  }
-});
-
-// DELETE registration by ID (optionally protected with auth)
-router.delete('/:id', /* auth, */ getRegistration, async (req, res) => {
-  try {
-    await res.registration.deleteOne();
-    res.json({ message: 'Deleted registration' });
-  } catch (err) {
-    if(err)
-      res.status(500).json({ message: 'Delete failed' });
-  }
-});
-
-// Middleware to get registration by ID
-async function getRegistration(req, res, next) {
-  let registration;
-  try {
-    registration = await Registration.findById(req.params.id);
-    if (!registration) {
-      return res.status(404).json({ message: 'Not found' });
-    }
-  } catch (err) {
-    if(err)
-      return res.status(400).json({ message: 'Invalid ID format' });
-  }
-
-  res.registration = registration;
-  next();
-}
 
 module.exports = router;
